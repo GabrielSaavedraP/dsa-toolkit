@@ -4,26 +4,27 @@
 // SinglyLinkedList<T>: each node points only to the next one.
 //
 // HOW IT WORKS
-// Unlike an array, nodes are NOT contiguous in memory — each Node is
+// Unlike an array, nodes are NOT contiguous in memory -- each Node is
 // its own heap allocation holding a value and a pointer to the next
 // Node. This is why push_front is O(1) (no shifting needed, just
 // relink pointers) but random access A[i] is O(n) (you must walk
 // node by node from head).
 //
 // Complexity:
-//   push_front / pop_front   O(1)
-//   push_back                O(1) with tail pointer (else O(n))
-//   insert_at(i) / erase_at(i)  O(n)  (walk to position i)
-//   search                    O(n)
+//   push_front / pop_front      O(1)
+//   push_back                    O(1) with tail pointer (else O(n))
+//   insert_at(i) / erase_at(i)   O(n)  (walk to position i)
+//   search                       O(n)
 template <typename T>
 class SinglyLinkedList {
-private:
+public:
     struct Node {
         T value;
         Node* next;
         Node(const T& v) : value(v), next(nullptr) {}
     };
 
+private:
     Node* head_;
     Node* tail_;
     int size_;
@@ -124,6 +125,7 @@ public:
     bool empty() const { return size_ == 0; }
     T& front() { return head_->value; }
     T& back() { return tail_->value; }
+    Node* headNode() const { return head_; }
 
     template <typename F>
     void forEach(F f) const {

@@ -1,5 +1,6 @@
 #pragma once
 #include <stdexcept>
+#include <iostream>
 
 // DoublyLinkedList<T>: like SinglyLinkedList, but each node also keeps
 // a `prev` pointer. That extra pointer is what makes pop_back and
@@ -7,10 +8,10 @@
 // of needing a full walk from head like in the singly linked version.
 //
 // Complexity: push_front/push_back/pop_front/pop_back O(1).
-//             insert_at/erase_at/search O(n).
+//             insert_at/erase_at/find/Delete O(n).
 template <typename T>
 class DoublyLinkedList {
-private:
+public:
     struct Node {
         T value;
         Node* prev;
@@ -18,6 +19,7 @@ private:
         Node(const T& v) : value(v), prev(nullptr), next(nullptr) {}
     };
 
+private:
     Node* head_;
     Node* tail_;
     int size_;
@@ -109,8 +111,43 @@ public:
         size_--;
     }
 
+    // Removes the FIRST node whose value equals `val`. No-op if not found.
+    // This is the "delete x" operation from the doubly-linked-list problem.
+    //
+    // HOW IT WORKS: walk from head comparing values. Once found, tell
+    // the node's two neighbors to point past it (if a neighbor doesn't
+    // exist, it means the node was head_ or tail_, so we move that
+    // pointer instead), then free it.
+    void Delete(const T& val) {
+        Node* cur = head_;
+        while (cur) {
+            if (cur->value == val) {
+                if (cur->prev) cur->prev->next = cur->next; else head_ = cur->next;
+                if (cur->next) cur->next->prev = cur->prev; else tail_ = cur->prev;
+                delete cur;
+                size_--;
+                return; // only the FIRST match is removed
+            }
+            cur = cur->next;
+        }
+    }
+
     int size() const { return size_; }
     bool empty() const { return size_ == 0; }
     T& front() { return head_->value; }
     T& back() { return tail_->value; }
+    Node* headNode() const { return head_; }
+    Node* tailNode() const { return tail_; }
+
+    void print(std::ostream& os = std::cout) const {
+        Node* cur = head_;
+        bool first = true;
+        while (cur) {
+            if (!first) os << " ";
+            os << cur->value;
+            first = false;
+            cur = cur->next;
+        }
+        os << "\n";
+    }
 };
