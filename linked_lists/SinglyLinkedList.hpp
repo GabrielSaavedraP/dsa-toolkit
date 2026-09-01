@@ -103,6 +103,29 @@ public:
         size_--;
     }
 
+    void pop_back() {
+        if (!head_) return; // Lista vacía
+
+        // Caso de 1 solo elemento: O(1)
+        if (head_ == tail_) {
+            delete head_;
+            head_ = tail_ = nullptr;
+            size_ = 0;
+            return;
+        }
+
+        // Caso de >1 elemento: O(N) recorriendo hasta el penúltimo
+        Node* cur = head_;
+        while (cur->next != tail_) {
+            cur = cur->next;
+        }
+
+        delete tail_;
+        tail_ = cur;
+        tail_->next = nullptr;
+        size_--;
+    }
+
     // Returns index of first match, or -1.
     int find(const T& val) const {
         Node* cur = head_;
