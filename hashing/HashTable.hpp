@@ -1,54 +1,44 @@
 #include <iostream>
 using namespace std;
 
-// my_map<key_type, value_type>: hash table with separate chaining.
+// my_map<key_type, value_type>: tabla hash con encadenamiento separado (separate chaining).
 //
-// HOW IT WORKS
-// We keep an array of `m` "buckets" (chains[0..m-1]). Each bucket is
-// the HEAD of its own tiny linked list of Entry nodes. To find/insert
-// a key:
-//   1) Hash the key to get a bucket index (0 to m-1) via _hash().
-//   2) Walk that bucket's chain comparing keys one by one.
-//   3) If found, return/update it. If not found (walked off the end,
-//      cur == nullptr), that's a "miss" -- for operator[], we create
-//      a brand new Entry and make it the new head of that chain.
-// Two different keys landing in the SAME bucket is called a
-// "collision" -- we don't fight it, we just let that bucket's chain
-// grow longer. That's the whole idea behind "separate chaining":
-// separate the colliding keys into their own list instead of
-// overwriting each other.
+// CÓMO FUNCIONA:
+// Mantenemos un arreglo de `m` "baldes" o buckets (chains[0..m-1]). Cada bucket es la
+// CABEZA de su propia pequeña lista enlazada de nodos Entry. Para buscar/insertar una clave:
+//   1) Se aplica la función hash a la clave para obtener el índice del bucket (0 a m-1) mediante _hash().
+//   2) Se recorre la cadena de ese bucket comparando las claves una por una.
+//   3) Si se encuentra, se retorna/actualiza. Si no se encuentra (se llega al final,
+//      cur == nullptr), ocurre un "fallo de búsqueda". Para operator[], creamos un
+//      nodo Entry completamente nuevo y lo colocamos como la nueva cabeza de esa cadena.
+// Que dos claves distintas caigan en el MISMO bucket se llama "colisión". En lugar de evitarlo,
+// simplemente dejamos que la cadena de ese bucket crezca. Esa es la idea del "encadenamiento separado":
+// separar las claves que colisionan en su propia lista en lugar de sobrescribirse.
 //
-// HOW TO IMPLEMENT IT (the recipe, step by step):
-//   a) Define a small Entry node: key, value, and a pointer to the
-//      next Entry in the SAME bucket's chain (this is just a singly
-//      linked list node, nothing new).
-//   b) Allocate `chains` as an array of `m` pointers (Entry*), all
-//      starting at nullptr (m empty chains).
-//   c) _hash(key): turn the key into a number in [0, m), by any
-//      deterministic function -- here we do it digit by digit for
-//      integers, since it's an int key, mixing each digit in with a
-//      multiplier B so different digit patterns spread across buckets.
-//   d) operator[](key): hash to find the right bucket, then WALK the
-//      chain with a raw pointer (`cur = chains[i]; while (cur && ...)
-//      cur = cur->next;`), comparing `cur->key != key` at each step.
-//      If you fall off the chain without finding it, prepend a new
-//      Entry to that bucket (new node's `next` = the old head, then
-//      the bucket now points at the new node) -- prepending is O(1),
-//      no need to walk to the end.
-//   e) has_key(key): identical walk, but you only need a yes/no
-//      answer at the end (cur == nullptr means "not found").
-//   f) Don't forget a destructor that walks and deletes every Entry in
-//      every bucket, plus `delete[] chains` -- otherwise every bucket
-//      list you built with `new` leaks memory when the table is destroyed.
+// CÓMO IMPLEMENTARLO (paso a paso):
+//   a) Definir un nodo Entry pequeño: clave (key), valor (value) y un puntero al siguiente
+//      Entry en la MISMA cadena del bucket (es un nodo de lista simplemente enlazada estándar).
+//   b) Asignar `chains` como un arreglo de `m` punteros (Entry*), todos inicializados en nullptr
+//      (m cadenas vacías).
+//   c) _hash(key): convierte la clave en un número en el rango [0, m) mediante una función determinista.
+//      Aquí se procesa dígito por dígito (ya que la clave es entera), multiplicando por un valor B
+//      para distribuir mejor los distintos patrones de dígitos entre los buckets.
+//   d) operator[](key): aplica la función hash para hallar el bucket correcto, luego RECORRE la cadena
+//      con un puntero (`cur = chains[i]; while (cur && ...) cur = cur->next;`), comparando
+//      `cur->key != key` en cada paso. Si recorre toda la lista sin encontrarlo, antepone (prepend)
+//      un nuevo Entry a ese bucket (el `next` del nuevo nodo apunta a la cabeza antigua, y el bucket
+//      pasa a apuntar al nuevo nodo). Anteponer es $O(1)$, no hay necesidad de ir hasta el final.
+//   e) has_key(key): recorrido idéntico al anterior, pero solo retorna una respuesta booleana
+//      (cur == nullptr significa "no encontrado").
+//   f) Incluir un destructor que recorra y elimine cada Entry de cada bucket, además de hacer
+//      `delete[] chains`. De lo contrario, cada nodo creado con `new` causaría una fuga de memoria.
 //
-// Complexity: operator[] / has_key   O(1) average (assuming the hash
-// spreads keys evenly across the m buckets, so each chain stays
-// short), but O(n) worst case if every key collided into one bucket
-// (a bad hash function, or m too small for how many keys you insert).
-// This version does NOT auto-resize when chains get long -- if you
-// need that guarantee, add a rehash step like in HashTable.hpp from
-// the toolkit (doubles m and reinserts everything once load factor
-// gets too high).
+// Complejidad: operator[] / has_key es $O(1)$ en promedio (asumiendo que el hash distribuye las
+// claves de manera uniforme en los m buckets, manteniendo cadenas cortas), pero $O(n)$ en el peor
+// caso si todas las claves colisionan en un solo bucket (por una mala función hash o un 'm' muy pequeño).
+// Esta versión NO escala de tamaño automáticamente cuando las cadenas crecen. Si requieres esa
+// garantía, se debe añadir un paso de rehash (duplicar 'm' y reinsertar todo cuando el factor de
+// carga sea elevado).
 template <typename key_type, typename value_type>
 struct my_map {
     struct Entry {
@@ -60,7 +50,7 @@ struct my_map {
     };
 
     int m;
-    Entry** chains; // array of m linked-list heads (own nodes, not std::vector)
+    Entry** chains; // Arreglo de m cabezas de listas enlazadas (nodos propios, sin usar std::vector)
 
     my_map(int m) : m(m) {
         chains = new Entry*[m];
@@ -80,7 +70,7 @@ struct my_map {
         Entry* cur = chains[chain_position];
         while (cur != nullptr && cur->key != key) cur = cur->next;
         if (cur == nullptr) {
-            // prepend: O(1), no need to reach the end of the chain
+            // Anteponer (prepend): O(1), no es necesario llegar al final de la cadena
             chains[chain_position] = new Entry(key, value_type(), chains[chain_position]);
             cur = chains[chain_position];
         }
@@ -112,7 +102,7 @@ struct my_map {
             for (Entry* cur = chains[i]; cur != nullptr; cur = cur->next) {
                 cout << cur->key << " --> " << cur->value << endl;
             }
-            cout << "End bucket" << endl;
+            cout << "Fin de bucket" << endl;
         }
     }
 };
