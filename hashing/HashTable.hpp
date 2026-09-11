@@ -4,6 +4,7 @@ using namespace std;
 
 // Tabla hash con encadenamiento (chaining), usando solo vector como STL permitido.
 // Cada cubeta es un vector<Par>; colisiones se resuelven agregando a la misma cubeta.
+// Rehash automático cuando el factor de carga supera 0.75.
 template <typename TipoClave, typename TipoValor>
 struct my_map {
 
@@ -20,6 +21,9 @@ struct my_map {
     my_map(int cubetas_iniciales = 8) : num_cubetas(cubetas_iniciales), total(0) {
         cubetas.resize(num_cubetas);
     }
+
+    // ========================================================
+    // ========================================================
 
     TipoValor& operator[](const TipoClave& clave) {
         if ((double)(total + 1) / num_cubetas > 0.75) {
@@ -41,7 +45,6 @@ struct my_map {
         return cubetas[i][j].valor;
     }
 
-    // Borra intercambiando con el último elemento de la cubeta (O(1), evita shift)
     void erase(const TipoClave& clave) {
         int i = _hash(clave);
         int j = 0;
@@ -70,12 +73,9 @@ struct my_map {
         return j != (int)cubetas[i].size();
     }
 
-    // Hash polinomial dígito por dígito. Normaliza negativos (si no, caen todos en cubeta 0).
     int _hash(TipoClave clave) const {
         const int BASE = 311;
         const int MOD = 1e9 + 7;
-
-        if (clave < 0) clave = -clave;
 
         int h = 0;
         while (clave > 0) {
@@ -87,7 +87,10 @@ struct my_map {
         return h % num_cubetas;
     }
 
-    // Duplica cubetas y reinserta todo (evita que una cubeta crezca sin control)
+    // ========================================================
+    // ========================================================
+
+
     void resize(int nuevo_num_cubetas) {
         vector<vector<Par>> cubetas_viejas = cubetas;
 
@@ -102,6 +105,7 @@ struct my_map {
             }
         }
     }
+    // --------------------------------------------------------
 
     int size() const { return total; }
     bool empty() const { return total == 0; }
