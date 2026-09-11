@@ -4,7 +4,6 @@ using namespace std;
 
 // Tabla hash con encadenamiento (chaining), usando solo vector como STL permitido.
 // Cada cubeta es un vector<Par>; colisiones se resuelven agregando a la misma cubeta.
-// Rehash automático cuando el factor de carga supera 0.75.
 template <typename TipoClave, typename TipoValor>
 struct my_map {
 
