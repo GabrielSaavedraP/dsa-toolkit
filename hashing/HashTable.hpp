@@ -4,6 +4,25 @@ using namespace std;
 
 // Tabla hash con encadenamiento (chaining), usando solo vector como STL permitido.
 // Cada cubeta es un vector<Par>; colisiones se resuelven agregando a la misma cubeta.
+
+
+//=====================================HASH STRINGS==================================
+/*
+int _hash(const string& clave) const {
+        const int BASE = 311;
+        const int MOD = 1e9 + 7;
+
+        int h = 0;
+        for (char c : clave) {
+            h = (1LL * h * BASE + (c + 1)) % MOD;
+        }
+
+        int indice = h % num_cubetas;
+        if (indice < 0) indice += num_cubetas;
+        return indice;
+    }
+*/
+//==============================================================================
 template <typename TipoClave, typename TipoValor>
 struct my_map {
 
@@ -72,18 +91,27 @@ struct my_map {
         return j != (int)cubetas[i].size();
     }
 
-    int _hash(TipoClave clave) const {
+    int _hash(long long clave) const {
         const int BASE = 311;
         const int MOD = 1e9 + 7;
 
+        long long k = clave < 0 ? -clave : clave;
         int h = 0;
-        while (clave > 0) {
-            int digito = clave % 10;
+
+        if (k == 0) h = 1;
+        while (k > 0) {
+            int digito = k % 10;
             h = (1LL * h * BASE + (digito + 1)) % MOD;
-            clave /= 10;
+            k /= 10;
         }
 
-        return h % num_cubetas;
+        if (clave < 0) {
+            h = (1LL * h * BASE + 7) % MOD;
+        }
+
+        int indice = h % num_cubetas;
+        if (indice < 0) indice += num_cubetas;
+        return indice;
     }
 
     // ========================================================
