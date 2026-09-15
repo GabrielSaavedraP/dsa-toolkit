@@ -37,4 +37,27 @@ struct BST {
         }
         return false;
     }
+
+    data_type min_element() {
+        if (root == nullptr) {
+            return data_type();
+        }
+        TreeNode* current = root;
+        while (current -> left != nullptr) {
+            current = current -> left;
+        }
+        return current->value;
+    }
+
+    data_type max_element() {
+        if (root == nullptr) {
+            return data_type();
+        }
+        TreeNode* current = root;
+        while (current -> right != nullptr) {
+            current = current -> right;
+        }
+        return current->value;
+    }
 };
+
