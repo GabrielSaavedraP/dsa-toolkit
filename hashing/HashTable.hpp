@@ -187,3 +187,10 @@ struct my_map {
 };
 
 //PARA INSERTAR (dentro de un for): m[nums[i]] = 1;
+/*
+
+m[clave] = 1; → "Solo quiero saber si esta clave existe".
+m[clave] = i; → "Necesito recordar la posición de esta clave".
+m[clave]++; → "Necesito contar cuántas veces aparece esta clave".
+
+*/
