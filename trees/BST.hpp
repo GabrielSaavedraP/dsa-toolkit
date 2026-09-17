@@ -99,4 +99,54 @@ struct BST {
         cout << u->data << " ";
         print_subtree_inorder(u->right);
     }
+
+    data_type successor(TreeNode* x) {
+        if (x -> right != nullptr) {
+            return min_element(x -> right);
+        }
+        TreeNode* y = x -> parent;
+        while (y != nullptr and y -> right == x) {
+            x = y;
+            y = y -> parent;
+        }
+        return y ? y -> data : data_type();
+    }
+
+    data_type predecessor(TreeNode* x) {
+        if (x -> left != nullptr) {
+            return max_element(x -> left);
+        }
+        TreeNode* y = x -> parent;
+        while (y != nullptr and y -> left == x) {
+            x = y;
+            y = y -> parent;
+        }
+        return y ? y -> data : data_type();
+    }
+
+    void transplant(TreeNode* u, TreeNode* v) {
+        if (u -> parent == nullptr) {
+            root = v;
+        }
+        else if (u -> parent -> right == u) {
+            u -> parent -> right = v;
+        }
+        else {
+            u -> parent -> left = v;
+        }
+        if (v != nullptr) {
+            v -> parent = u -> parent;
+        }
+        delete u;
+    }
+
+    void case_zero(TreeNode* u) {
+
+    }
+
+    void erase(TreeNode* u) {
+        if (u -> parent == nullptr and u -> right == nullptr) {
+            
+        }
+    }
 };

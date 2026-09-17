@@ -7,6 +7,9 @@ using namespace std;
 
 
 //=====================================HASH STRINGS==================================
+// Descomenta este bloque (y comenta el _hash de long long de abajo) cuando
+// el problema use claves tipo string (ej. "cuenta cuántas veces aparece
+// cada palabra", "verifica si dos strings son anagramas").
 /*
 int _hash(const string& clave) const {
         const int BASE = 311;
@@ -43,6 +46,13 @@ struct my_map {
     // ========================================================
     // ========================================================
 
+    // USAR CUANDO: necesitas leer O escribir un valor asociado a una
+    // clave, sin que te importe si ya existía. Es el caso más común en
+    // Codeforces: "contar frecuencia de cada elemento" (m[x]++), "sumar
+    // valores por categoría" (m[categoria] += valor), o simplemente
+    // guardar/actualizar un dato por clave. Si la clave es nueva, la
+    // crea sola con valor por defecto (0 para int, "" para string, etc.)
+    // — por eso `m[x]++` funciona directo sin chequear antes si x existe.
     TipoValor& operator[](const TipoClave& clave) {
         if ((double)(total + 1) / num_cubetas > 0.75) {
             resize(num_cubetas * 2);
@@ -63,6 +73,11 @@ struct my_map {
         return cubetas[i][j].valor;
     }
 
+    // USAR CUANDO: el problema pide "elimina la clave x" explícitamente,
+    // o cuando estás procesando una ventana deslizante (sliding window) y
+    // necesitas sacar elementos que ya no están en el rango actual. NO la
+    // uses solo para "poner un valor en 0" — para eso basta con
+    // m[x] = 0, que es más simple y no reduce el tamaño de la tabla.
     void erase(const TipoClave& clave) {
         int i = _hash(clave);
         int j = 0;
@@ -80,6 +95,13 @@ struct my_map {
         }
     }
 
+    // USAR CUANDO: solo necesitas saber SI existe la clave, sin querer
+    // crearla si no está. Importante: NO uses `if (m[x] > 0)` para esto,
+    // porque operator[] CREA la clave con valor 0 si no existía (efecto
+    // secundario no deseado que infla el tamaño de la tabla). has_key es
+    // la forma segura de "solo consultar" — típico en "verifica si ya
+    // visitaste este estado" (backtracking, BFS con estados complejos) o
+    // "detecta si hay un elemento repetido en el arreglo".
     bool has_key(const TipoClave& clave) const {
         int i = _hash(clave);
         int j = 0;
@@ -91,6 +113,8 @@ struct my_map {
         return j != (int)cubetas[i].size();
     }
 
+    // Función interna: no la llamas directo en tus problemas, la usan
+    // operator[]/erase/has_key para saber en qué cubeta buscar.
     int _hash(long long clave) const {
         const int BASE = 311;
         const int MOD = 1e9 + 7;
@@ -117,7 +141,11 @@ struct my_map {
     // ========================================================
     // ========================================================
 
-
+    // Función interna: se dispara sola desde operator[] cuando el load
+    // factor sube demasiado. No la llamas directo, salvo que ya sepas
+    // de antemano cuántos elementos vas a insertar y quieras reservar
+    // espacio una sola vez al inicio (evita varios rehash intermedios
+    // en problemas con n grande, ej. n=10^6).
     void resize(int nuevo_num_cubetas) {
         vector<vector<Par>> cubetas_viejas = cubetas;
 
@@ -134,9 +162,19 @@ struct my_map {
     }
     // --------------------------------------------------------
 
+    // USAR CUANDO: el problema pregunta directamente "¿cuántos elementos
+    // distintos hay?" — como en el main de abajo, donde cada m[x]=1
+    // solo cuenta como elemento nuevo la primera vez que aparece x.
     int size() const { return total; }
+
+    // USAR CUANDO: necesitas chequear si ya has guardado algo antes de
+    // hacer otra operación (ej. "si la tabla está vacía, inicializa algo").
     bool empty() const { return total == 0; }
 
+    // USAR CUANDO: estás depurando tu solución y quieres ver cómo se
+    // distribuyeron las claves entre cubetas (detectar si tu hash está
+    // colisionando demasiado). Normalmente NO se usa en la solución
+    // final que envías al juez, solo mientras desarrollas.
     void print() {
         for (int i = 0; i < num_cubetas; ++i) {
             cout << "Bucket " << i << ":\n";
@@ -147,3 +185,24 @@ struct my_map {
         }
     }
 };
+
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n;
+    cin >> n;
+
+    // Reservar 2*n cubetas desde el inicio evita rehash intermedios —
+    // útil cuando ya sabes de antemano cuántos elementos vas a insertar.
+    my_map<int, int> m(2 * n);
+
+    for (int i = 0; i < n; ++i) {
+        int x;
+        cin >> x;
+        m[x] = 1; // patrón "contar distintos": cada clave nueva suma al size()
+    }
+    cout << m.size() << endl; // imprime cuántos elementos DISTINTOS hubo
+
+}
