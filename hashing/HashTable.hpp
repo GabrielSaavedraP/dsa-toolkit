@@ -186,3 +186,4 @@ struct my_map {
     }
 };
 
+//PARA INSERTAR (dentro de un for): m[nums[i]] = 1;
