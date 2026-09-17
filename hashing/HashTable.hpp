@@ -186,23 +186,3 @@ struct my_map {
     }
 };
 
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n;
-    cin >> n;
-
-    // Reservar 2*n cubetas desde el inicio evita rehash intermedios —
-    // útil cuando ya sabes de antemano cuántos elementos vas a insertar.
-    my_map<int, int> m(2 * n);
-
-    for (int i = 0; i < n; ++i) {
-        int x;
-        cin >> x;
-        m[x] = 1; // patrón "contar distintos": cada clave nueva suma al size()
-    }
-    cout << m.size() << endl; // imprime cuántos elementos DISTINTOS hubo
-
-}
