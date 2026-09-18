@@ -58,4 +58,12 @@ add_executable(DSA_2026_2
         trees/test_trees.cpp
         trees/TreeTraversals.hpp
         linked_lists/IndexedReversibleList.hpp
-        "hashing/ejercicios de clase/codeforces3.cpp")
+        "hashing/ejercicios de clase/codeforces3.cpp"
+        "hashing/ejercicios de clase/d.cpp"
+        "hashing/ejercicios de clase/f.cpp"
+        "hashing/ejercicios de clase/g.cpp"
+        "hashing/ejercicios de clase/h.cpp"
+        "hashing/ejercicios de clase/leetcode1.cpp"
+        "hashing/ejercicios de clase/leetcode2.cpp"
+        "hashing/ejercicios de clase/sec1A.cpp"
+        "hashing/ejercicios de clase/sec1B.cpp")
