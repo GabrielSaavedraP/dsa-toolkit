@@ -57,4 +57,5 @@ add_executable(DSA_2026_2
         trees/BST.hpp
         trees/test_trees.cpp
         trees/TreeTraversals.hpp
-        linked_lists/IndexedReversibleList.hpp)
+        linked_lists/IndexedReversibleList.hpp
+        "hashing/ejercicios de clase/codeforces3.cpp")
