@@ -1,4 +1,4 @@
-#include<bits/stdc++.h>
+#include<iostream>
 using namespace::std;
 
 template<typename data_type>
@@ -30,7 +30,7 @@ struct Heap {
         while (left(p) < _size) {
             int m = p;
             int l = left(p), r = right(p);
-            if (l < _size and a[l] < a[m]) {
+            if (a[l] < a[m]) {
                 m = l;
             }
             if (r < _size and a[r] < a[m]) {
@@ -61,6 +61,7 @@ struct Heap {
 
     void pop() {
         swap(a[0], a[_size - 1]);
+        a.pop_back();
         --_size;
         sift_down(0);
     }
@@ -80,6 +81,4 @@ struct Heap {
 
 int main() {
     cin.tie(0) -> sync_with_stdio(false);
-    
-    return 0;
 }

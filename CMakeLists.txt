@@ -66,4 +66,5 @@ add_executable(DSA_2026_2
         "hashing/ejercicios de clase/sec1B.cpp"
         "hashing/ejercicios de clase/sec2A.cpp"
         "hashing/ejercicios de clase/sec2B.cpp"
-        "hashing/ejercicios de clase/sec2C.cpp")
+        "hashing/ejercicios de clase/sec2C.cpp"
+        "heaps/ejercicios clase/ejA.cpp")
