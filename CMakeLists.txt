@@ -40,9 +40,6 @@ add_executable(DSA_2026_2
         graphs/test_graphs.cpp
         hashing/HashTable.hpp
         hashing/test_hashing.cpp
-        heaps/MaxHeap.hpp
-        heaps/MinHeap.hpp
-        heaps/test_heaps.cpp
         linked_lists/CircularLinkedList.hpp
         linked_lists/DoublyLinkedList.hpp
         linked_lists/SinglyLinkedList.hpp
