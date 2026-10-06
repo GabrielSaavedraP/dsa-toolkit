@@ -1,330 +1,431 @@
 #include <iostream>
+#include <vector>
 using namespace std;
 
-// AVL Tree: BST donde |FB(v)| <= 1 en todo nodo, con h(nulo) = -1 y
-// FB(v) = h(v.izq) - h(v.der). Funciona con cualquier tipo que tenga
-// operator< (y operator<< si quieres imprimir): int, long long, char, string, structs.
-template<typename data_type>
-struct AVL {
+// ============================================================================
+//  my_avl_map<TipoClave, TipoValor>  -- mapa ORDENADO sobre un AVL
+//  Funciona con cualquier TipoClave que tenga operator<  (int, long long,
+//  char, string, pair-like structs...). Para print() la clave y el valor
+//  necesitan operator<<.   Si usas string en la clave: #include <string>
+//
+//  Diferencia con tu my_map: aqui las claves viven ORDENADAS, asi que ademas
+//  de [] / erase / has_key tienes preguntas de orden (menor, mayor, k-esimo...).
+//  Todo es O(log n).
+// ============================================================================
+//
+// ============================  CHEAT SHEET  =================================
+//
+//  --- LAS 3 OPERACIONES DE SIEMPRE (identicas a tu my_map) ---
+//  m[clave] = 1;     // "solo quiero saber si esta clave existe"
+//  m[clave] = i;     // "necesito recordar la posicion de esta clave"
+//  m[clave]++;       // "necesito contar cuantas veces aparece esta clave"
+//
+//  --- BASICAS ---
+//  m.has_key(clave)  // true/false
+//  m.erase(clave)    // borra si existe
+//  m.size()  m.empty()  m.clear()
+//
+//  --- PREGUNTAS DE ORDEN (devuelven Nodo*, nullptr si no existe) ---
+//  m.minimo()                // la clave mas chica
+//  m.maximo()                // la clave mas grande
+//  m.mayor_o_igual(x)        // primera clave >= x   (lower_bound)
+//  m.mayor(x)                // primera clave >  x   (upper_bound)
+//  m.menor_o_igual(x)        // ultima  clave <= x
+//  m.menor(x)                // ultima  clave <  x
+//  m.siguiente(nodo)         // la clave que sigue
+//  m.anterior(nodo)          // la clave previa
+//
+//  Uso:  auto p = m.mayor_o_igual(x);
+//        if (p != nullptr) cout << p->clave << " " << p->valor;
+//
+//  --- ESTADISTICAS DE ORDEN ---
+//  m.contar_menores(x)       // cuantas claves son < x   (rank)
+//  m.kesimo(k)               // Nodo* de la k-esima clave, k desde 0
+//
+//  --- RECORRER EN ORDEN (de menor a mayor) ---
+//  for (auto p = m.minimo(); p != nullptr; p = m.siguiente(p))
+//      cout << p->clave << " " << p->valor << "\n";
+//
+//  --- DEBUG ---
+//  m.print();        // inorder: clave --> valor
+//  m.print_arbol();  // el arbol "de lado" (raiz a la izquierda)
+//  m.es_avl();       // verifica la propiedad AVL
+// ============================================================================
 
-    struct TreeNode {
-        data_type data;
-        TreeNode* left;
-        TreeNode* right;
-        TreeNode* parent;
-        int height;
+template <typename TipoClave, typename TipoValor>
+struct my_avl_map {
 
-        TreeNode(const data_type& data = data_type(),
-                    TreeNode* left = nullptr,
-                    TreeNode* right = nullptr,
-                    TreeNode* parent = nullptr) :
-                    data(data), left(left), right(right), parent(parent), height(0) {}
+    // ========================================================================
+    // ============== NO EDITAR: NODO ==========================================
+    // ========================================================================
+    struct Nodo {
+        TipoClave clave;
+        TipoValor valor;
+        Nodo* izq;
+        Nodo* der;
+        Nodo* padre;
+        int altura;   // h(nulo) = -1, h(hoja) = 0
+        int tam;      // cantidad de nodos en el subarbol (para kesimo / rank)
+
+        Nodo(const TipoClave& k, Nodo* p = nullptr)
+            : clave(k), valor(TipoValor()), izq(nullptr), der(nullptr),
+              padre(p), altura(0), tam(1) {}
     };
 
-    TreeNode* root;
+    Nodo* raiz;
 
-    AVL() {
-        root = nullptr;
+    my_avl_map() : raiz(nullptr) {}
+    ~my_avl_map() { destruir(raiz); }
+
+    // Evita copias accidentales (doble free). Pasa el mapa por referencia (&).
+    my_avl_map(const my_avl_map&) = delete;
+    my_avl_map& operator=(const my_avl_map&) = delete;
+
+    // ========================================================================
+    // ============== NO EDITAR: ALTURA, TAMANO Y BALANCE =====================
+    // ========================================================================
+    int _mayor(int a, int b) const { return a > b ? a : b; }
+
+    int _altura(Nodo* u) const { return u == nullptr ? -1 : u->altura; }
+
+    int _tam(Nodo* u) const { return u == nullptr ? 0 : u->tam; }
+
+    // Recalcula altura y tamano de u a partir de sus hijos
+    void _actualizar(Nodo* u) {
+        u->altura = 1 + _mayor(_altura(u->izq), _altura(u->der));
+        u->tam = 1 + _tam(u->izq) + _tam(u->der);
     }
 
-    // ========================================================
-    // ALTURA Y FACTOR DE BALANCE
-    // ========================================================
-
-    int mayor(int a, int b) {
-        return a > b ? a : b;
+    // FB(u) = h(izq) - h(der)
+    int _factor_balance(Nodo* u) const {
+        return u == nullptr ? 0 : _altura(u->izq) - _altura(u->der);
     }
 
-    // h(nulo) = -1
-    int altura(TreeNode* u) {
-        return u == nullptr ? -1 : u -> height;
+    // ========================================================================
+    // ============== NO EDITAR: ROTACIONES ===================================
+    // ========================================================================
+
+    // Reemplaza a u por v como hijo de u->padre (o como raiz). No borra u.
+    void _reemplazar_hijo(Nodo* u, Nodo* v) {
+        if (u->padre == nullptr) raiz = v;
+        else if (u->padre->izq == u) u->padre->izq = v;
+        else u->padre->der = v;
+        if (v != nullptr) v->padre = u->padre;
     }
 
-    void actualizar_altura(TreeNode* u) {
-        u -> height = 1 + mayor(altura(u -> left), altura(u -> right));
-    }
+    Nodo* _rotar_derecha(Nodo* y) {
+        Nodo* x = y->izq;
+        Nodo* B = x->der;
 
-    // FB(v) = h(v.izq) - h(v.der)
-    int factor_balance(TreeNode* u) {
-        return u == nullptr ? 0 : altura(u -> left) - altura(u -> right);
-    }
+        _reemplazar_hijo(y, x);
+        x->der = y;
+        y->padre = x;
+        y->izq = B;
+        if (B != nullptr) B->padre = y;
 
-    // Verifica la propiedad AVL: |FB| <= 1 en todo nodo
-    bool es_avl() {
-        return es_avl(root);
-    }
-
-    bool es_avl(TreeNode* u) {
-        if (u == nullptr) return true;
-        int fb = factor_balance(u);
-        if (fb > 1 or fb < -1) return false;
-        return es_avl(u -> left) and es_avl(u -> right);
-    }
-
-    // ========================================================
-    // ROTACIONES (O(1), conservan el orden inorder)
-    // ========================================================
-
-    // Reemplaza a u por v como hijo de u->parent (o como raíz). No borra u.
-    void reemplazar_hijo(TreeNode* u, TreeNode* v) {
-        if (u -> parent == nullptr) {
-            root = v;
-        }
-        else if (u -> parent -> left == u) {
-            u -> parent -> left = v;
-        }
-        else {
-            u -> parent -> right = v;
-        }
-        if (v != nullptr) {
-            v -> parent = u -> parent;
-        }
-    }
-
-    // rotar der. en y:  (x.izq = A, x.der = B, y.der = C)
-    //   y            x
-    //   x C   -->    A y
-    //   A B            B C
-    // Devuelve la nueva raíz del subárbol (x)
-    TreeNode* rotar_derecha(TreeNode* y) {
-        TreeNode* x = y -> left;
-        TreeNode* B = x -> right;
-
-        reemplazar_hijo(y, x);
-        x -> right = y;
-        y -> parent = x;
-        y -> left = B;
-        if (B != nullptr) B -> parent = y;
-
-        actualizar_altura(y);
-        actualizar_altura(x);
+        _actualizar(y);
+        _actualizar(x);
         return x;
     }
 
-    // Espejo de rotar_derecha. Devuelve la nueva raíz del subárbol (y)
-    TreeNode* rotar_izquierda(TreeNode* x) {
-        TreeNode* y = x -> right;
-        TreeNode* B = y -> left;
+    Nodo* _rotar_izquierda(Nodo* x) {
+        Nodo* y = x->der;
+        Nodo* B = y->izq;
 
-        reemplazar_hijo(x, y);
-        y -> left = x;
-        x -> parent = y;
-        x -> right = B;
-        if (B != nullptr) B -> parent = x;
+        _reemplazar_hijo(x, y);
+        y->izq = x;
+        x->padre = y;
+        x->der = B;
+        if (B != nullptr) B->padre = x;
 
-        actualizar_altura(x);
-        actualizar_altura(y);
+        _actualizar(x);
+        _actualizar(y);
         return y;
     }
 
-    // ========================================================
-    // REBALANCEO
-    // ========================================================
+    // ========================================================================
+    // ============== NO EDITAR: REBALANCEO ===================================
+    // ========================================================================
 
-    // Arregla u si |FB(u)| = 2. Devuelve la raíz del subárbol resultante.
-    TreeNode* rebalancear(TreeNode* u) {
-        actualizar_altura(u);
-        int fb = factor_balance(u);
+    // Arregla u si |FB(u)| = 2. Devuelve la raiz del subarbol resultante.
+    Nodo* _rebalancear(Nodo* u) {
+        _actualizar(u);
+        int fb = _factor_balance(u);
 
         if (fb > 1) {
-            // LR: primero rotar izq. en el hijo, luego der. en u
-            if (factor_balance(u -> left) < 0) {
-                rotar_izquierda(u -> left);
-            }
-            return rotar_derecha(u);          // LL
+            if (_factor_balance(u->izq) < 0) _rotar_izquierda(u->izq);   // LR
+            return _rotar_derecha(u);                                    // LL
         }
         if (fb < -1) {
-            // RL: primero rotar der. en el hijo, luego izq. en u
-            if (factor_balance(u -> right) > 0) {
-                rotar_derecha(u -> right);
-            }
-            return rotar_izquierda(u);        // RR
+            if (_factor_balance(u->der) > 0) _rotar_derecha(u->der);     // RL
+            return _rotar_izquierda(u);                                  // RR
         }
         return u;
     }
 
-    // Sube desde u hasta la raíz rebalanceando cada ancestro
-    void rebalancear_hacia_arriba(TreeNode* u) {
+    // Sube desde u hasta la raiz rebalanceando (y actualizando) cada ancestro
+    void _rebalancear_hacia_arriba(Nodo* u) {
         while (u != nullptr) {
-            u = rebalancear(u);
-            u = u -> parent;
+            u = _rebalancear(u);
+            u = u->padre;
         }
     }
 
-    // ========================================================
-    // OPERACIONES (iguales a las del BST)
-    // ========================================================
+    // ========================================================================
+    // ============== NO EDITAR: BUSQUEDA Y LIBERAR MEMORIA ===================
+    // ========================================================================
 
-    TreeNode* find(const data_type& key) {
-        TreeNode* current = root;
-        while (current != nullptr) {
-            if (key < current -> data) {
-                current = current -> left;
-            }
-            else if (current -> data < key) {
-                current = current -> right;
-            }
-            else {
-                return current;
-            }
+    Nodo* _encontrar(const TipoClave& clave) const {
+        Nodo* actual = raiz;
+        while (actual != nullptr) {
+            if (clave < actual->clave) actual = actual->izq;
+            else if (actual->clave < clave) actual = actual->der;
+            else return actual;
         }
         return nullptr;
     }
 
-    bool search(const data_type& key) {
-        return find(key) != nullptr;
-    }
-
-    TreeNode* min_element(TreeNode* u) {
+    Nodo* _minimo_de(Nodo* u) const {
         if (u == nullptr) return nullptr;
-        TreeNode* current = u;
-        while (current -> left != nullptr) {
-            current = current -> left;
-        }
-        return current;
+        while (u->izq != nullptr) u = u->izq;
+        return u;
     }
 
-    TreeNode* max_element(TreeNode* u) {
+    Nodo* _maximo_de(Nodo* u) const {
         if (u == nullptr) return nullptr;
-        TreeNode* current = u;
-        while (current -> right != nullptr) {
-            current = current -> right;
-        }
-        return current;
+        while (u->der != nullptr) u = u->der;
+        return u;
     }
 
-    TreeNode* min_element() {
-        return min_element(root);
-    }
-
-    TreeNode* max_element() {
-        return max_element(root);
-    }
-
-    TreeNode* successor(TreeNode* x) {
-        if (x -> right != nullptr) {
-            return min_element(x -> right);
-        }
-        TreeNode* y = x -> parent;
-        while (y != nullptr and y -> right == x) {
-            x = y;
-            y = y -> parent;
-        }
-        return y;
-    }
-
-    TreeNode* predecessor(TreeNode* x) {
-        if (x -> left != nullptr) {
-            return max_element(x -> left);
-        }
-        TreeNode* y = x -> parent;
-        while (y != nullptr and y -> left == x) {
-            x = y;
-            y = y -> parent;
-        }
-        return y;
-    }
-
-    // Insertar como en un BST, luego rebalancear desde el padre del nodo nuevo
-    void insert(const data_type& value) {
-        if (root == nullptr) {
-            root = new TreeNode(value);
-            return;
-        }
-        TreeNode* current = root;
-        while (current != nullptr) {
-            if (not (current -> data < value) and not (value < current -> data)) return;
-            if (current -> data < value) {
-                if (current -> right != nullptr) {
-                    current = current -> right;
-                }
-                else {
-                    current -> right = new TreeNode(value, nullptr, nullptr, current);
-                    break;
-                }
-            }
-            else {
-                if (current -> left != nullptr) {
-                    current = current -> left;
-                }
-                else {
-                    current -> left = new TreeNode(value, nullptr, nullptr, current);
-                    break;
-                }
-            }
-        }
-        rebalancear_hacia_arriba(current);
-    }
-
-    void transplant(TreeNode* u, TreeNode* v) {
-        reemplazar_hijo(u, v);
+    void destruir(Nodo* u) {
+        if (u == nullptr) return;
+        destruir(u->izq);
+        destruir(u->der);
         delete u;
     }
 
-    // Eliminar como en un BST, luego rebalancear desde el padre del nodo
-    // que se quitó físicamente (puede haber más de una rotación)
-    void erase(TreeNode* u) {
-        TreeNode* p;
-        if (u -> left == nullptr and u -> right == nullptr) {
-            p = u -> parent;
-            transplant(u, nullptr);
+    // Borra fisicamente el nodo u y rebalancea desde donde quedo el hueco
+    void _borrar_nodo(Nodo* u) {
+        Nodo* p;
+        if (u->izq == nullptr && u->der == nullptr) {          // hoja
+            p = u->padre;
+            _reemplazar_hijo(u, nullptr);
+            delete u;
         }
-        else if (u -> left != nullptr and u -> right != nullptr) {
-            TreeNode* succ = successor(u);
-            u -> data = succ -> data;
-            p = succ -> parent;
-            transplant(succ, succ -> right);
+        else if (u->izq != nullptr && u->der != nullptr) {     // dos hijos
+            Nodo* s = siguiente(u);                            // sucesor (sin hijo izq)
+            u->clave = s->clave;
+            u->valor = s->valor;
+            p = s->padre;
+            _reemplazar_hijo(s, s->der);
+            delete s;
         }
-        else {
-            p = u -> parent;
-            if (u -> left) transplant(u, u -> left);
-            else transplant(u, u -> right);
+        else {                                                 // un hijo
+            p = u->padre;
+            Nodo* h = (u->izq != nullptr) ? u->izq : u->der;
+            _reemplazar_hijo(u, h);
+            delete u;
         }
-        rebalancear_hacia_arriba(p);
+        _rebalancear_hacia_arriba(p);
     }
 
-    void erase(const data_type& key) {
-        TreeNode* u = find(key);
-        if (u != nullptr) erase(u);
+    // ========================================================================
+    // ========================================================================
+    //  ZONA DE USO: ESTAS SON LAS OPERACIONES QUE VAS A LLAMAR EN main
+    // ========================================================================
+    // ========================================================================
+
+    // ------------------------------------------------------------------------
+    // 1) LAS 3 OPERACIONES PRINCIPALES (se comportan igual que my_map)
+    //      m[clave] = 1;    m[clave] = i;    m[clave]++;
+    //    Si la clave no existe se crea con valor 0 (TipoValor()).
+    //    La referencia devuelta sigue valida aunque se hagan mas inserciones.
+    // ------------------------------------------------------------------------
+    TipoValor& operator[](const TipoClave& clave) {
+        if (raiz == nullptr) {
+            raiz = new Nodo(clave);
+            return raiz->valor;
+        }
+
+        Nodo* actual = raiz;
+        Nodo* nuevo = nullptr;
+        while (nuevo == nullptr) {
+            if (clave < actual->clave) {
+                if (actual->izq != nullptr) actual = actual->izq;
+                else { nuevo = new Nodo(clave, actual); actual->izq = nuevo; }
+            }
+            else if (actual->clave < clave) {
+                if (actual->der != nullptr) actual = actual->der;
+                else { nuevo = new Nodo(clave, actual); actual->der = nuevo; }
+            }
+            else {
+                return actual->valor;      // ya existia
+            }
+        }
+        _rebalancear_hacia_arriba(actual);
+        return nuevo->valor;
     }
 
-    // ========================================================
-    // RECORRIDOS
-    // ========================================================
-
-    void print_inorder() {
-        print_subtree_inorder(root);
-        cout << endl;
+    // ------------------------------------------------------------------------
+    // 2) BASICAS
+    // ------------------------------------------------------------------------
+    bool has_key(const TipoClave& clave) const {
+        return _encontrar(clave) != nullptr;
     }
 
-    void print_subtree_inorder(TreeNode* u) {
+    void erase(const TipoClave& clave) {
+        Nodo* u = _encontrar(clave);
+        if (u != nullptr) _borrar_nodo(u);
+    }
+
+    int size() const { return _tam(raiz); }
+
+    bool empty() const { return raiz == nullptr; }
+
+    void clear() {
+        destruir(raiz);
+        raiz = nullptr;
+    }
+
+    // ------------------------------------------------------------------------
+    // 3) PREGUNTAS DE ORDEN (todas devuelven Nodo*; nullptr si no hay)
+    //    Se usan asi:  auto p = m.mayor_o_igual(x);
+    //                  if (p != nullptr) { p->clave; p->valor; }
+    // ------------------------------------------------------------------------
+    Nodo* minimo() const { return _minimo_de(raiz); }
+    Nodo* maximo() const { return _maximo_de(raiz); }
+
+    // primera clave >= x   (como lower_bound)
+    Nodo* mayor_o_igual(const TipoClave& x) const {
+        Nodo* res = nullptr;
+        Nodo* a = raiz;
+        while (a != nullptr) {
+            if (a->clave < x) a = a->der;
+            else { res = a; a = a->izq; }
+        }
+        return res;
+    }
+
+    // primera clave > x    (como upper_bound)
+    Nodo* mayor(const TipoClave& x) const {
+        Nodo* res = nullptr;
+        Nodo* a = raiz;
+        while (a != nullptr) {
+            if (x < a->clave) { res = a; a = a->izq; }
+            else a = a->der;
+        }
+        return res;
+    }
+
+    // ultima clave <= x
+    Nodo* menor_o_igual(const TipoClave& x) const {
+        Nodo* res = nullptr;
+        Nodo* a = raiz;
+        while (a != nullptr) {
+            if (x < a->clave) a = a->izq;
+            else { res = a; a = a->der; }
+        }
+        return res;
+    }
+
+    // ultima clave < x
+    Nodo* menor(const TipoClave& x) const {
+        Nodo* res = nullptr;
+        Nodo* a = raiz;
+        while (a != nullptr) {
+            if (a->clave < x) { res = a; a = a->der; }
+            else a = a->izq;
+        }
+        return res;
+    }
+
+    Nodo* siguiente(Nodo* x) const {
+        if (x->der != nullptr) return _minimo_de(x->der);
+        Nodo* y = x->padre;
+        while (y != nullptr && y->der == x) { x = y; y = y->padre; }
+        return y;
+    }
+
+    Nodo* anterior(Nodo* x) const {
+        if (x->izq != nullptr) return _maximo_de(x->izq);
+        Nodo* y = x->padre;
+        while (y != nullptr && y->izq == x) { x = y; y = y->padre; }
+        return y;
+    }
+
+    // ------------------------------------------------------------------------
+    // 4) ESTADISTICAS DE ORDEN
+    // ------------------------------------------------------------------------
+
+    // cuantas claves son estrictamente menores que x
+    int contar_menores(const TipoClave& x) const {
+        int cuenta = 0;
+        Nodo* a = raiz;
+        while (a != nullptr) {
+            if (a->clave < x) { cuenta += 1 + _tam(a->izq); a = a->der; }
+            else a = a->izq;
+        }
+        return cuenta;
+    }
+
+    // la k-esima clave en orden creciente, k desde 0. nullptr si k fuera de rango
+    Nodo* kesimo(int k) const {
+        if (k < 0 || k >= size()) return nullptr;
+        Nodo* a = raiz;
+        while (a != nullptr) {
+            int izq = _tam(a->izq);
+            if (k < izq) a = a->izq;
+            else if (k == izq) return a;
+            else { k -= izq + 1; a = a->der; }
+        }
+        return nullptr;
+    }
+
+    // ------------------------------------------------------------------------
+    // 5) DEBUG
+    // ------------------------------------------------------------------------
+    bool es_avl() const { return _es_avl(raiz); }
+
+    bool _es_avl(Nodo* u) const {
+        if (u == nullptr) return true;
+        int fb = _factor_balance(u);
+        if (fb > 1 || fb < -1) return false;
+        return _es_avl(u->izq) && _es_avl(u->der);
+    }
+
+    void print() const {
+        for (Nodo* p = minimo(); p != nullptr; p = siguiente(p)) {
+            cout << p->clave << " --> " << p->valor << "\n";
+        }
+    }
+
+    // Arbol de lado: la raiz a la izquierda, hijo derecho arriba
+    void print_arbol() const { _print_arbol(raiz, 0); }
+
+    void _print_arbol(Nodo* u, int nivel) const {
         if (u == nullptr) return;
-        print_subtree_inorder(u -> left);
-        cout << u -> data << " ";
-        print_subtree_inorder(u -> right);
-    }
-
-    void print_preorder() {
-        print_subtree_preorder(root);
-        cout << endl;
-    }
-
-    void print_subtree_preorder(TreeNode* u) {
-        if (u == nullptr) return;
-        cout << u -> data << " ";
-        print_subtree_preorder(u -> left);
-        print_subtree_preorder(u -> right);
-    }
-
-    void print_postorder() {
-        print_subtree_postorder(root);
-        cout << endl;
-    }
-
-    void print_subtree_postorder(TreeNode* u) {
-        if (u == nullptr) return;
-        print_subtree_postorder(u -> left);
-        print_subtree_postorder(u -> right);
-        cout << u -> data << " ";
+        _print_arbol(u->der, nivel + 1);
+        for (int i = 0; i < nivel; ++i) cout << "    ";
+        cout << u->clave << ":" << u->valor << "\n";
+        _print_arbol(u->izq, nivel + 1);
     }
 };
+
+
+// PARA INSERTAR (dentro de un for): m[nums[i]] = 1;
+/*
+
+m[clave] = 1; → "Solo quiero saber si esta clave existe".
+m[clave] = i; → "Necesito recordar la posición de esta clave".
+m[clave]++;   → "Necesito contar cuántas veces aparece esta clave".
+
+EXTRA (porque el AVL esta ordenado):
+auto p = m.mayor_o_igual(x);   → "Dame la clave mas cercana que sea >= x".
+auto p = m.menor(x);           → "Dame la clave mas cercana que sea <  x".
+m.contar_menores(x);           → "Cuantas claves hay menores que x".
+m.kesimo(k);                   → "Dame la k-esima clave en orden".
+
+SIEMPRE EN CODEFORCES PARA LEER DENTRO DEL FOR:
+int x;
+cin >> x;
+*/
