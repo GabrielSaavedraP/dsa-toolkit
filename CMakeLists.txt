@@ -24,11 +24,7 @@ add_executable(DSA_2026_2
         backtracking/Permutations.hpp
         backtracking/test_backtracking.cpp
         balanced_trees/AVLTree.hpp
-        balanced_trees/BPlusTree.hpp
-        balanced_trees/BTree.hpp
-        balanced_trees/test_avl.cpp
-        balanced_trees/test_bplustree.cpp
-        balanced_trees/test_btree.cpp
+        balanced_trees/RedBlackTree.hpp
         graphs/BFS.hpp
         graphs/DFS.hpp
         graphs/Dijkstra.hpp
@@ -67,4 +63,8 @@ add_executable(DSA_2026_2
         "hashing/ejercicios de clase/sec2A.cpp"
         "hashing/ejercicios de clase/sec2B.cpp"
         "hashing/ejercicios de clase/sec2C.cpp"
-        "heaps/ejercicios clase/ejA.cpp")
+        "heaps/ejercicios clase/ejA.cpp"
+        "balanced_trees/avl ejercicios en clase/ejD.cpp"
+        "balanced_trees/avl ejercicios en clase/ejA.cpp"
+        "backtracking/ejercicios de clase/b.cpp"
+        balanced_trees/BBST.cpp)
