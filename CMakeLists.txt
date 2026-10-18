@@ -67,4 +67,8 @@ add_executable(DSA_2026_2
         "balanced_trees/avl ejercicios en clase/ejD.cpp"
         "balanced_trees/avl ejercicios en clase/ejA.cpp"
         "backtracking/ejercicios de clase/b.cpp"
-        balanced_trees/BBST.cpp)
+        balanced_trees/BBST.cpp
+        "balanced_trees/avl ejercicios en clase/ejB.cpp"
+        "balanced_trees/avl ejercicios en clase/bonus1.cpp"
+        "balanced_trees/avl ejercicios en clase/bonus3.cpp"
+        "balanced_trees/avl ejercicios en clase/bonus2.cpp")
