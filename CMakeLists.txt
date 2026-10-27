@@ -25,15 +25,6 @@ add_executable(DSA_2026_2
         backtracking/test_backtracking.cpp
         balanced_trees/AVLTree.hpp
         balanced_trees/RedBlackTree.hpp
-        graphs/BFS.hpp
-        graphs/DFS.hpp
-        graphs/Dijkstra.hpp
-        graphs/DSU.hpp
-        graphs/GraphList.hpp
-        graphs/GraphMatrix.hpp
-        graphs/Kruskal.hpp
-        graphs/Prim.hpp
-        graphs/test_graphs.cpp
         hashing/HashTable.hpp
         hashing/test_hashing.cpp
         linked_lists/CircularLinkedList.hpp
@@ -71,4 +62,11 @@ add_executable(DSA_2026_2
         "balanced_trees/avl ejercicios en clase/ejB.cpp"
         "balanced_trees/avl ejercicios en clase/bonus1.cpp"
         "balanced_trees/avl ejercicios en clase/bonus3.cpp"
-        "balanced_trees/avl ejercicios en clase/bonus2.cpp")
+        "balanced_trees/avl ejercicios en clase/bonus2.cpp"
+        "graphs/Problemas de clase Grafos/C.cpp"
+        "graphs/Problemas de clase Grafos/D.cpp"
+        "graphs/Problemas de clase Grafos/E.cpp"
+        "graphs/Problemas de clase Grafos/F.cpp"
+        "graphs/Problemas de clase Grafos/G.cpp"
+        graphs/BFS.cpp
+        "graphs/Problemas de clase BFS/A.cpp")
