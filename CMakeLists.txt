@@ -69,4 +69,10 @@ add_executable(DSA_2026_2
         "graphs/Problemas de clase Grafos/F.cpp"
         "graphs/Problemas de clase Grafos/G.cpp"
         graphs/BFS.cpp
-        "graphs/Problemas de clase BFS/A.cpp")
+        "graphs/Problemas de clase BFS/A.cpp"
+        "graphs/Problemas de clase BFS/B.cpp"
+        "graphs/Problemas de clase BFS/C.cpp"
+        "graphs/Problemas de clase BFS/D.cpp"
+        "graphs/Problemas de clase BFS/E.cpp"
+        "graphs/Problemas de clase BFS/F.cpp"
+        "graphs/Problemas de clase BFS/G.cpp")
