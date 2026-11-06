@@ -75,4 +75,8 @@ add_executable(DSA_2026_2
         "graphs/Problemas de clase BFS/D.cpp"
         "graphs/Problemas de clase BFS/E.cpp"
         "graphs/Problemas de clase BFS/F.cpp"
-        "graphs/Problemas de clase BFS/G.cpp")
+        "graphs/Problemas de clase BFS/G.cpp"
+        graphs/DFS.cpp
+        "graphs/Problema de clase DFS/A.cpp"
+        "graphs/Problema de clase DFS/D.cpp"
+        "graphs/Problema de clase DFS/E.cpp")
